@@ -3,6 +3,12 @@
 import sys
 
 
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+MUL = 0b10100010
+
+
 class CPU:
     """Main CPU class."""
 
@@ -12,26 +18,42 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
 
-    def load(self):
+    def load(self, program):
         """Load a program into memory."""
 
         address = 0
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010,  # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111,  # PRN R0
+        #     0b00000000,
+        #     0b00000001,  # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
+        here = []
+
+        try:
+            with open(program) as file:
+                for line in file:
+                    split_line = line.split('#')
+                    command_line = split_line[0]
+                    if len(command_line) > 0:
+                        command_line.strip()
+                    if command_line[0] == '1' or command_line[0] == '0':
+                        here = command_line.strip()
+                        self.ram[address] = int(here, 2)
+                        address += 1
+
+        except FileNotFoundError:
+            print('file does not exist')
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -39,6 +61,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+        if op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -72,15 +96,18 @@ class CPU:
         """Run the CPU."""
         while True:
             IR = self.ram[self.pc]
-            opperand_a = self.ram_read(self.pc + 1)
-            opperand_b = self.ram_read(self.pc + 2)
-            if IR == 0b10000010:  # LDI
-                self.reg[opperand_a] = opperand_b
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
+            if IR == LDI:  # LDI
+                self.reg[operand_a] = operand_b
                 self.pc += 3
-            elif IR == 0b01000111:  # PRN
-                print(self.reg[opperand_a])
+            elif IR == PRN:  # PRN
+                print(self.reg[operand_a])
                 self.pc += 2
-            elif IR == 0b00000001:  # HLT
+            elif IR == MUL:
+                self.alu("MUL", operand_a, operand_b)
+                self.pc += 3
+            elif IR == HLT:  # HLT
                 break
             else:
                 print(f"unknown command {IR}")
