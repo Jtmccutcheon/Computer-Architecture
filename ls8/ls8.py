@@ -6,7 +6,7 @@ import sys
 from cpu import *
 print(sys.argv)
 
-cpu = CPU()
+
 if len(sys.argv) != 2:
     print('Invalid input.')
     sys.exit(1)

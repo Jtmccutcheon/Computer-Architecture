@@ -7,6 +7,8 @@ HLT = 0b00000001
 LDI = 0b10000010
 PRN = 0b01000111
 MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
 
 
 class CPU:
@@ -17,6 +19,7 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.sp = 7
 
     def load(self, program):
         """Load a program into memory."""
@@ -98,15 +101,40 @@ class CPU:
             IR = self.ram[self.pc]
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
+
             if IR == LDI:  # LDI
                 self.reg[operand_a] = operand_b
                 self.pc += 3
+
             elif IR == PRN:  # PRN
                 print(self.reg[operand_a])
                 self.pc += 2
+
             elif IR == MUL:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
+
+            elif IR == PUSH:
+                # decrement the stack pointer
+                self.sp -= 1
+
+                # get what is in the register
+                reg_address = self.ram[self.pc + 1]
+                value = self.reg[reg_address]
+
+                # store it at that point in the stack
+                self.ram[self.sp] = value
+                self.pc += 2
+
+            elif IR == POP:
+                # Copy the value from the address pointed to by SP to the given register.
+                value = self.ram[self.sp]
+                target_reg_address = self.ram[self.pc + 1]
+                self.reg[target_reg_address] = value
+                # Increment SP
+                self.sp += 1
+                self.pc += 2
+
             elif IR == HLT:  # HLT
                 break
             else:
